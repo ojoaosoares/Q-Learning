@@ -1,5 +1,6 @@
 import sys
 import random
+import time
 
 alpha = 0.1  
 gamma = 0.9  
@@ -58,11 +59,11 @@ def choose_action(Q, state):
         return random.choice(list(actions.keys()))
 
     return max(Q[state], key=Q[state].get)
-    
 
 def qlearning(the_map, cols, rows, xi, yi, iterations, mode):
-
     rewards = standard_rewards
+
+    s = 0
     
     if mode == 2:
         rewards = positive_rewards
@@ -74,40 +75,30 @@ def qlearning(the_map, cols, rows, xi, yi, iterations, mode):
         state = (xi, yi)
 
         while True:
-            print(f"Estado atual: {state}")  # Debug
 
+            s += 1
             # Checando se o estado é final
             if the_map[state[1]][state[0]] in "XO":
-                print("Estado final atingido.")
-                # reward = rewards[the_map[state[1]][state[0]]]
-                break  # Fim do episódio
+                break
 
             action = choose_action(Q, state)
             next_state = get_next_state(state, action, cols, rows)
 
-            print(f"Ação escolhida: {action}, Próximo estado: {next_state}")
-
             # Verificação para limites do mapa
             if next_state[0] < 0 or next_state[0] >= cols or next_state[1] < 0 or next_state[1] >= rows:
-                print("Tentativa de sair dos limites!")
                 continue  # Tente outra ação
+
+            if the_map[next_state[1]][next_state[0]] == '@' or next_state[0] < 0 or next_state[0] >= cols or next_state[1] < 0 or next_state[1] >= rows:
+                next_state = state 
 
             reward = rewards[the_map[state[1]][state[0]]]
             max_q_next = max(Q[next_state].values())
 
-            # Verificando se o próximo estado é inválido
-            if state == next_state:
-                reward = rewards['@']
-            
-
-            # Obtendo a recompensa do estado atual
-            
-
-            # Atualizando a Q-table
             Q[state][action] = (1 - alpha) * Q[state][action] + gamma * (reward + max_q_next)
 
+            # Aplicando o comportamento estocástico no modo 3
             if mode == 3:
-                if random.uniform(0, 1) < 0.2:  # 10% de chance de mudar para uma ação perpendicular
+                if random.uniform(0, 1) < 0.2:  # 20% de chance de mudar para uma ação perpendicular
                     if action == "up":
                         action = random.choice(["left", "right"])  # Escolhe aleatoriamente entre "left" ou "right"
                     elif action == "down":
@@ -117,22 +108,17 @@ def qlearning(the_map, cols, rows, xi, yi, iterations, mode):
                     elif action == "right":
                         action = random.choice(["up", "down"])
                 next_state = get_next_state(state, action, cols, rows)
-                    
-                
             state = next_state
-            
 
         it += 1
 
-    return Q
-
-
+    return Q, s
 
 def print_q_map(Q, the_map, cols, rows):
     for r in range(rows):
         line = ""
         for c in range(cols):
-            if the_map[r][c] in "XO@":
+            if the_map[r][c] in "x@O":
                 line += the_map[r][c]  # Imprime os caracteres 'X', 'O' e '@' como estão
             else:
                 best_action = max(Q[(c, r)], key=Q[(c, r)].get)  # Pega a melhor ação na posição (r, c)
@@ -141,30 +127,39 @@ def print_q_map(Q, the_map, cols, rows):
         print(line)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 6:
-        print("Use: python3 qlearning.py [filename] [mode] [xi] [yi] [iterations]")
+    if len(sys.argv) != 6 and len(sys.argv) != 7:
+        print("Use: python3 qlearning.py [filename] [mode] [xi] [yi] [iterations] [stats]")
         print("Use: modes [standard, positive, stochastic]")
         sys.exit(1)
 
     filename, mode, x, y, iterations = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
 
     with open(filename, 'r') as file:
-    # Lendo as três primeiras linhas
+        # Lendo as três primeiras linhas
         cols, rows = map(int, file.readline().split())
 
         # Lendo as próximas linhas que representam os dados das colunas
         the_map = [list(file.readline().strip()) for _ in range(rows)]
 
-    if (mode == 'standard'):
-        Q = qlearning(the_map, cols, rows, x, y, iterations, mode=1)
+    start_time = time.time()
 
-    elif (mode == 'positive'):
-        Q = qlearning(the_map, cols, rows, x, y, iterations, mode=2)
+    if mode == 'standard':
+        Q, s = qlearning(the_map, cols, rows, x, y, iterations, mode=1)
 
-    elif (mode == 'stochastic'):
-        Q = qlearning(the_map, cols, rows, x, y, iterations, mode=3)
+    elif mode == 'positive':
+        Q, s = qlearning(the_map, cols, rows, x, y, iterations, mode=2)
+
+    elif mode == 'stochastic':
+        Q, s = qlearning(the_map, cols, rows, x, y, iterations, mode=3)
 
     else:
         sys.exit(1)
 
+    end_time = time.time()
+
+    execution_time = end_time - start_time
+
     print_q_map(Q, the_map, cols, rows)
+
+    if len(sys.argv) == 7 and sys.argv[6] == 'stats':
+        print(f'{execution_time:.8f} {s}')
