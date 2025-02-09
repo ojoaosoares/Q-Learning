@@ -94,7 +94,7 @@ def qlearning(the_map, cols, rows, xi, yi, iterations, mode):
             reward = rewards[the_map[state[1]][state[0]]]
             max_q_next = max(Q[next_state].values())
 
-            Q[state][action] = (1 - alpha) * Q[state][action] + gamma * (reward + max_q_next)
+            Q[state][action] = (1 - alpha) * Q[state][action] + alpha * (reward + gamma  * max_q_next)
 
             # Aplicando o comportamento estocástico no modo 3
             if mode == 3:
