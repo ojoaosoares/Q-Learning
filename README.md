@@ -22,14 +22,6 @@ O programa pode ser executado em três modos:
 ### Compilador necessário
 - **Python 3.x**
 
-### Instalando dependências
-
-Use o seguinte comando para instalar as dependências necessárias:
-
-```bash
-pip install -r requirements.txt
-```
-
 ## Como Executar
 
 Para executar o programa, utilize o seguinte comando no terminal:
